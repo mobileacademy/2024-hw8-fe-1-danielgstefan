@@ -3,6 +3,7 @@ let openedSquares = [];
 let flaggedSquares = [];
 let bombCount = 0;
 let squaresLeft = 0;
+let gameOver = false; 
 
 let bombProbability = 3;
 let maxProbability = 15;
@@ -36,6 +37,7 @@ function minesweeperGameBootstrapper(rowCount, colCount) {
 function generateBoard(boardMetadata) {
     squaresLeft = boardMetadata.colCount * boardMetadata.rowCount;
     board = [];
+    gameOver = false; 
 
     let table = document.getElementById("board");
     table.innerHTML = "";
@@ -97,12 +99,14 @@ class Pair {
 }
 
 function discoverSquare(x, y) {
+    if (gameOver) return; 
     let cell = document.getElementById("board").rows[x].cells[y];
     if (board[x][y].isFlagged || board[x][y].isOpen) return;
 
     if (board[x][y].hasBomb) {
         cell.classList.add("bomb");
         alert("Game over! You hit a bomb.");
+        gameOver = true; 
         return;
     }
 
@@ -129,10 +133,12 @@ function discoverSquare(x, y) {
 
     if (squaresLeft === bombCount) {
         alert("Congratulations, you won!");
+        gameOver = true; 
     }
 }
 
 function flagSquare(x, y) {
+    if (gameOver) return; 
     let cell = document.getElementById("board").rows[x].cells[y];
     if (board[x][y].isOpen) return;
 
@@ -164,14 +170,15 @@ function updateBombProbability() {
 }
 
 function resetGame() {
-
     board = [];
     openedSquares = [];
     flaggedSquares = [];
     bombCount = 0;
     squaresLeft = 0;
+    gameOver = false; 
 
     changeDifficulty();
 }
+
 
 minesweeperGameBootstrapper(9, 9);
