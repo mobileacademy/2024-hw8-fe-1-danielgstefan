@@ -1,38 +1,33 @@
-/*
-*
-* "board" is a matrix that holds data about the
-* game board, in a form of BoardSquare objects
-*
-* openedSquares holds the position of the opened squares
-*
-* flaggedSquares holds the position of the flagged squares
-*
- */
 let board = [];
 let openedSquares = [];
 let flaggedSquares = [];
 let bombCount = 0;
 let squaresLeft = 0;
 
-
-/*
-*
-* the probability of a bomb in each square
-*
- */
 let bombProbability = 3;
 let maxProbability = 15;
-
 
 function minesweeperGameBootstrapper(rowCount, colCount) {
     let easy = {
         'rowCount': 9,
         'colCount': 9,
+        'bombProbability': 3
     };
-    // TODO you can declare here the medium and expert difficulties
+
+    let medium = {
+        'rowCount': 16,
+        'colCount': 16,
+        'bombProbability': 5
+    };
+
+    let expert = {
+        'rowCount': 16,
+        'colCount': 30,
+        'bombProbability': 8
+    };
 
     if (rowCount == null && colCount == null) {
-        // TODO have a default difficulty
+        generateBoard(easy);
     } else {
         generateBoard({'rowCount': rowCount, 'colCount': colCount});
     }
@@ -40,70 +35,57 @@ function minesweeperGameBootstrapper(rowCount, colCount) {
 
 function generateBoard(boardMetadata) {
     squaresLeft = boardMetadata.colCount * boardMetadata.rowCount;
+    board = [];
 
-    /*
-    *
-    * "generate" an empty matrix
-    *
-     */
+    let table = document.getElementById("board");
+    table.innerHTML = "";
+
     for (let i = 0; i < boardMetadata.colCount; i++) {
         board[i] = new Array(boardMetadata.rowCount);
-    }
-
-    /*
-    *
-    * TODO fill the matrix with "BoardSquare" objects, that are in a pre-initialized state
-    *
-    */
-
-
-    /*
-    *
-    * "place" bombs according to the probabilities declared at the top of the file
-    * those could be read from a config file or env variable, but for the
-    * simplicity of the solution, I will not do that
-    *
-    */
-    for (let i = 0; i < boardMetadata.colCount; i++) {
+        let row = table.insertRow();
         for (let j = 0; j < boardMetadata.rowCount; j++) {
-            // TODO place the bomb, you can use the following formula: Math.random() * maxProbability < bombProbability
+            let hasBomb = Math.random() * maxProbability < bombProbability;
+            board[i][j] = new BoardSquare(hasBomb, 0);
+            let cell = row.insertCell();
+            cell.addEventListener("click", () => discoverSquare(i, j));
+            cell.addEventListener("contextmenu", (e) => {
+                e.preventDefault();
+                flagSquare(i, j);
+            });
         }
     }
 
-    /*
-    *
-    * TODO set the state of the board, with all the squares closed
-    * and no flagged squares
-    *
-     */
+    for (let i = 0; i < boardMetadata.colCount; i++) {
+        for (let j = 0; j < boardMetadata.rowCount; j++) {
+            board[i][j].bombsAround = countBombsAround(i, j, boardMetadata);
+        }
+    }
 
-
-    //BELOW THERE ARE SHOWCASED TWO WAYS OF COUNTING THE VICINITY BOMBS
-
-    /*
-    *
-    * TODO count the bombs around each square
-    *
-    */
-
-    /*
-    *
-    * print the board to the console to see the result
-    *
-    */
     console.log(board);
 }
 
-/*
-*
-* simple object to keep the data for each square
-* of the board
-*
-*/
+function countBombsAround(x, y, boardMetadata) {
+    let bombsAround = 0;
+    for (let i = -1; i <= 1; i++) {
+        for (let j = -1; j <= 1; j++) {
+            let newX = x + i;
+            let newY = y + j;
+            if (newX >= 0 && newX < boardMetadata.colCount && newY >= 0 && newY < boardMetadata.rowCount) {
+                if (board[newX][newY].hasBomb) {
+                    bombsAround++;
+                }
+            }
+        }
+    }
+    return bombsAround;
+}
+
 class BoardSquare {
     constructor(hasBomb, bombsAround) {
         this.hasBomb = hasBomb;
         this.bombsAround = bombsAround;
+        this.isOpen = false;
+        this.isFlagged = false;
     }
 }
 
@@ -114,13 +96,82 @@ class Pair {
     }
 }
 
+function discoverSquare(x, y) {
+    let cell = document.getElementById("board").rows[x].cells[y];
+    if (board[x][y].isFlagged || board[x][y].isOpen) return;
 
-/*
-* call the function that "handles the game"
-* called at the end of the file, because if called at the start,
-* all the global variables will appear as undefined / out of scope
-*
- */
-minesweeperGameBootstrapper(5, 5);
+    if (board[x][y].hasBomb) {
+        cell.classList.add("bomb");
+        alert("Game over! You hit a bomb.");
+        return;
+    }
 
-// TODO create the other required functions such as 'discovering' a tile, and so on (also make sure to handle the win/loss cases)
+    board[x][y].isOpen = true;
+    cell.classList.add("open");
+    cell.textContent = board[x][y].bombsAround > 0 ? board[x][y].bombsAround : "";
+
+    openedSquares.push(new Pair(x, y));
+    squaresLeft--;
+
+    if (board[x][y].bombsAround === 0) {
+        for (let i = -1; i <= 1; i++) {
+            for (let j = -1; j <= 1; j++) {
+                let newX = x + i;
+                let newY = y + j;
+                if (newX >= 0 && newX < board.length && newY >= 0 && newY < board[0].length) {
+                    if (!board[newX][newY].isOpen) {
+                        discoverSquare(newX, newY);
+                    }
+                }
+            }
+        }
+    }
+
+    if (squaresLeft === bombCount) {
+        alert("Congratulations, you won!");
+    }
+}
+
+function flagSquare(x, y) {
+    let cell = document.getElementById("board").rows[x].cells[y];
+    if (board[x][y].isOpen) return;
+
+    if (board[x][y].isFlagged) {
+        cell.classList.remove("flagged");
+        flaggedSquares = flaggedSquares.filter(s => !(s.x === x && s.y === y));
+        board[x][y].isFlagged = false;
+    } else {
+        cell.classList.add("flagged");
+        flaggedSquares.push(new Pair(x, y));
+        board[x][y].isFlagged = true;
+    }
+}
+
+function changeDifficulty() {
+    let difficulty = document.getElementById("difficulty").value;
+    if (difficulty === "easy") {
+        minesweeperGameBootstrapper(9, 9);
+    } else if (difficulty === "medium") {
+        minesweeperGameBootstrapper(16, 16);
+    } else if (difficulty === "expert") {
+        minesweeperGameBootstrapper(16, 30);
+    }
+}
+
+function updateBombProbability() {
+    bombProbability = parseInt(document.getElementById("bombProbability").value);
+    changeDifficulty();
+}
+
+function resetGame() {
+
+    board = [];
+    openedSquares = [];
+    flaggedSquares = [];
+    bombCount = 0;
+    squaresLeft = 0;
+
+    changeDifficulty();
+}
+
+minesweeperGameBootstrapper(9, 9);

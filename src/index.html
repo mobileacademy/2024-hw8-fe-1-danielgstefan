@@ -1,9 +1,53 @@
-<html>
-  <head>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Minesweeper</title>
-    
-  </head>
-  <body>
-    <h1>Hello world</h1>
-  </body>
+    <style>
+        table {
+            border-collapse: collapse;
+        }
+
+        td {
+            width: 40px;
+            height: 40px;
+            text-align: center;
+            border: 1px solid #000;
+            cursor: pointer;
+        }
+
+        .bomb {
+            background-color: red;
+        }
+
+        .open {
+            background-color: lightgray;
+        }
+
+        .flagged {
+            background-color: yellow;
+        }
+    </style>
+</head>
+<body>
+  <h1>Minesweeper</h1>
+
+  <label for="difficulty">Select difficulty:</label>
+  <select id="difficulty" onchange="changeDifficulty()">
+      <option value="easy">Easy</option>
+      <option value="medium">Medium</option>
+      <option value="expert">Expert</option>
+  </select>
+
+  <label for="bombProbability">Bomb Probability:</label>
+  <input type="number" id="bombProbability" value="3" onchange="updateBombProbability()"/>
+
+  <button onclick="resetGame()">Reset Game</button>
+
+  <table id="board"></table>
+
+  <script src="solution-template.js"></script>
+</body>
+
 </html>
